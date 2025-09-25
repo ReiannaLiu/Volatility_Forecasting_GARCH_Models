@@ -1,96 +1,92 @@
-# GARCH Volatility Forecasting on S&P 500
 
-This project focuses on **modeling and forecasting volatility** of the S&P 500 index using the **GARCH(1,1) model**, and benchmarking its performance against simpler models like **Rolling Standard Deviation** and **EWMA (Exponentially Weighted Moving Average)**.
+# Volatility Forecasting with GARCH Models
 
----
-
-## **Project Overview**
-Financial returns often show **volatility clustering** — periods of high volatility followed by high volatility, and calm periods followed by calm periods.  
-To capture this, we:
-1. Analyze daily S&P 500 returns,
-2. Fit a **GARCH(1,1)** model to estimate conditional volatility,
-3. Forecast future volatility (1-day and 30-day ahead),
-4. Benchmark GARCH against **Rolling Std** and **EWMA** models.
+This project implements and compares **GARCH-family models** for volatility forecasting using daily WTI crude oil spot prices. The workflow moves from raw data acquisition to model evaluation, demonstrating both technical rigor and practical intuition.
 
 ---
 
-## **Data**
-- **Ticker:** `^GSPC` (S&P 500 Index).
-- **Source:** Yahoo Finance (`yfinance` library).
-- **Time Period:** 2015-01-01 to 2025-01-01.
-- **Fields:** Adjusted close price, daily log returns.
+## 1. Project Objective
+
+The goal is to model and forecast financial market volatility using **GARCH(1,1)** and **EGARCH(1,1)** specifications.
+Key aims:
+
+* Identify volatility clustering in daily returns.
+* Estimate conditional volatility models under realistic distributional assumptions.
+* Compare models using out-of-sample forecast accuracy.
+* Interpret persistence, asymmetry, and fat-tail effects.
 
 ---
 
-## **Methodology**
-1. **Data Preprocessing**
-   - Downloaded daily S&P 500 data from `yfinance`.
-   - Computed **log returns**:  
-     $$
-     r_t = \ln \frac{P_t}{P_{t-1}}
-     $$
+## 2. Data
 
-2. **Exploratory Data Analysis**
-   - **Rolling Volatility (30-day):**  
-     Visualized volatility clustering.
-   - **ACF of Squared Returns:**  
-     Confirmed persistence in volatility, supporting GARCH assumptions.
-
-3. **Modeling**
-   - **GARCH(1,1):** Estimated parameters $\omega, \alpha, \beta$.
-   - Generated 1-day and 30-day volatility forecasts.
-
-4. **Benchmark Models**
-   - **Rolling Std (30-day window).**
-   - **EWMA (λ = 0.94)** — RiskMetrics-style volatility estimate.
-
-5. **Evaluation Metrics**
-   - **MSE (Mean Squared Error).**
-   - **QLIKE Loss (Quasi-Likelihood).**
+* **Source:** FRED (Federal Reserve Bank of St. Louis).
+* **Asset:** Daily WTI crude oil spot price (`DCOILWTICO`).
+* **Period:** 2000–present (daily frequency).
+* **Transformation:** Log returns in percentage terms.
 
 ---
 
-## **Key Results**
-- **GARCH(1,1) Parameters:**  
-  $\alpha = 0.168$, $\beta = 0.799$, $\alpha + \beta = 0.967$ → **mean-reverting volatility**.
+## 3. Methodology
 
-- **1-Day Forecast:** ~0.97% volatility.
+1. **Exploratory Data Analysis**
 
-- **Model Performance (last 250 days):**
-  | Model             | MSE    | QLIKE  |
-  |-------------------|--------|--------|
-  | GARCH(1,1)        | 1.47   | 0.56   |
-  | Rolling Std (30d) | 1.40   | 0.47   |
-  | EWMA (λ=0.94)     | **1.29** | **0.38** |
+   * Visualize prices and log returns.
+   * Identify volatility clustering.
+   * Summarize descriptive statistics.
 
-- **Conclusion:**  
-  **EWMA outperformed GARCH** in short-term forecasting, but GARCH remains valuable for theoretical modeling and longer-horizon forecasts.
+2. **Statistical Testing**
 
----
+   * Run **ARCH LM tests** on squared returns.
+   * Confirm significant conditional heteroskedasticity.
 
-## **Key Visualizations**
-- **Daily Log Returns & Rolling Volatility.**
-- **ACF of Squared Returns.**
-- **Estimated Conditional Volatility (GARCH vs. Realized).**
-- **Forecasted vs. Realized Volatility.**
-- **Model Comparison (GARCH vs. EWMA vs. Rolling Std).**
+3. **Model Estimation**
 
----
+   * Fit **GARCH(1,1)** with Student-t innovations.
+   * Fit **EGARCH(1,1)** with Student-t innovations and leverage term.
+   * Evaluate parameters: persistence (α + β, β), shock response (α), asymmetry (γ), and heavy tails (ν).
 
-## **Tech Stack**
-- **Python 3.11**
-- Libraries:
-  - `yfinance` (data collection),
-  - `pandas`, `numpy` (data analysis),
-  - `matplotlib`, `seaborn` (visualization),
-  - `arch` (GARCH modeling),
-  - `statsmodels` (ACF plots),
-  - `sklearn` (MSE metric).
+4. **Diagnostics**
+
+   * Check standardized residuals for whiteness.
+   * Run Ljung–Box tests on squared residuals.
+
+5. **Forecasting & Evaluation**
+
+   * Generate 1-day-ahead rolling forecasts for last 252 days.
+   * Compare against realized volatility proxies: |r| and 5-day realized variance (RV5).
+   * Metrics: MSE, MAE, correlation, and QLIKE.
 
 ---
 
-## **Next Steps**
+## 4. Results
 
-* Extend to **EGARCH / GJR-GARCH** models to capture asymmetry.
-* Backtest **Value-at-Risk (VaR)** using GARCH volatility forecasts.
-* Compare performance across multiple indices (e.g., Nasdaq, Dow Jones).
+* **GARCH(1,1):**
+
+  * Persistence (α + β ≈ 0.985) indicates volatility shocks decay slowly.
+  * Student-t ν ≈ 6.6 confirms fat tails.
+  * Out-of-sample forecasts outperform EGARCH across all metrics.
+
+* **EGARCH(1,1) with leverage:**
+
+  * Persistence (β ≈ 0.986, α ≈ 0.139).
+  * Leverage parameter γ ≈ –0.054 (significant): negative shocks raise volatility more than positive shocks.
+  * Slightly weaker forecast performance than GARCH, though diagnostics confirm asymmetry is captured.
+
+---
+
+## 5. Conclusion
+
+* **Main finding:** A parsimonious **GARCH(1,1) with Student-t errors** provided the best out-of-sample volatility forecasts for WTI crude oil.
+* **Additional insight:** EGARCH reveals the expected **leverage effect**, but forecast metrics favored the simpler GARCH specification.
+* **Implication:** Even basic GARCH models are powerful tools for risk management, though asymmetry should be tested for equity and commodity series.
+
+---
+
+## 6. Tools & Libraries
+
+* Python (Jupyter Notebook)
+* `pandas`, `numpy`, `matplotlib`
+* `pandas_datareader` for FRED data
+* `statsmodels` for ARCH LM tests and diagnostics
+* `arch` for GARCH-family estimation and forecasting
+
